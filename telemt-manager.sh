@@ -350,6 +350,7 @@ prompt_default() {
   local default_value="${2}"
   local answer=""
   read -r -p "${label} [${default_value}]: " answer
+  answer="$(trim_whitespace "${answer}")"
   if [ -z "${answer}" ]; then
     printf '%s\n' "${default_value}"
   else
@@ -364,6 +365,7 @@ prompt_yes_no() {
 
   while true; do
     read -r -p "${label} [${default_value}]: " answer
+    answer="$(trim_whitespace "${answer}")"
     answer="${answer:-${default_value}}"
     case "${answer}" in
       y|Y|yes|YES|да|Да|ДА) return 0 ;;
@@ -391,6 +393,33 @@ validate_secret() {
 
 escape_toml_string() {
   printf '%s' "${1}" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+trim_whitespace() {
+  printf '%s' "${1}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+detect_server_ip() {
+  local detected_ip=""
+
+  if have_cmd ip; then
+    detected_ip="$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if ($i == "src" && (i + 1) <= NF) {
+            print $(i + 1)
+            exit
+          }
+        }
+      }'
+    )"
+  fi
+
+  if [ -z "${detected_ip}" ] && have_cmd hostname; then
+    detected_ip="$(hostname -I 2>/dev/null | awk '{for (i = 1; i <= NF; i++) if ($i !~ /^127\./) { print $i; exit }}')"
+  fi
+
+  printf '%s\n' "${detected_ip}"
 }
 
 ensure_layout() {
@@ -728,6 +757,7 @@ collect_configuration() {
   local metrics_port=""
   local proxy_user=""
   local proxy_secret=""
+  local default_public_host=""
 
   while true; do
     mask_domain="$(prompt_default 'Домен для TLS-маскировки (например, google.com)' "${current_mask_domain:-google.com}")"
@@ -735,8 +765,11 @@ collect_configuration() {
     warn "Некорректный домен."
   done
 
+  default_public_host="${current_public_host:-$(detect_server_ip)}"
+  default_public_host="${default_public_host:-${mask_domain}}"
+
   while true; do
-    public_host="$(prompt_default 'Публичный домен/IP для tg:// ссылки' "${current_public_host:-${mask_domain}}")"
+    public_host="$(prompt_default 'Публичный домен/IP для tg:// ссылки' "${default_public_host}")"
     validate_domain "${public_host}" && break
     warn "Некорректный домен или IP."
   done
