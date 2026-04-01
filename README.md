@@ -6,6 +6,8 @@
 
 Проект построен поверх [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker) и использует Docker-образ `whn0thacked/telemt-docker:latest` как основу для развертывания.
 
+## Описание
+
 Скрипт помогает:
 
 - установить Telemt с нуля за один запуск
@@ -15,8 +17,6 @@
 - включить или выключить автообновление
 - обновлять конфиг, смотреть статус и логи
 - делать backup и восстанавливать конфигурацию
-
-## Что умеет скрипт
 
 После установки доступно интерактивное меню:
 
@@ -40,7 +40,9 @@
 
 Также все основные действия доступны через CLI-флаги.
 
-## Требования
+## Установка и использование Telemt
+
+### Требования
 
 Сценарий рассчитан на Linux VPS с:
 
@@ -48,10 +50,15 @@
 - доступом `root` или пользователем с `sudo`
 - открытым входящим портом для Telemt, обычно `443`
 
-Рекомендуемая ОС:
+Поддерживаемые ОС для автоустановки Docker:
 
-- Ubuntu 22.04+
-- Debian 12+
+- Ubuntu
+- Debian
+- Fedora
+- RHEL
+- CentOS Stream
+- Rocky Linux
+- AlmaLinux
 
 Если `docker` и `docker compose` отсутствуют, `telemt-manager.sh` попытается установить их автоматически на поддерживаемой ОС и затем продолжит установку.
 
@@ -64,11 +71,274 @@
 
 Если ОС не поддерживается, скрипт завершится с понятной ошибкой и не будет пытаться угадывать команды установки.
 
-## Рекомендации по базовой защите нового VPS
+### Шаг 1. Подключитесь к серверу
+
+```bash
+ssh telemt@YOUR_SERVER_IP
+```
+
+Или:
+
+```bash
+ssh root@YOUR_SERVER_IP
+```
+
+### Шаг 2. Установите Git, если его ещё нет
+
+Для Ubuntu или Debian:
+
+```bash
+sudo apt update
+sudo apt install -y git
+```
+
+Для Fedora:
+
+```bash
+sudo dnf install -y git
+```
+
+Для RHEL, Rocky, AlmaLinux, CentOS Stream:
+
+```bash
+sudo dnf install -y git
+```
+
+### Шаг 3. Клонируйте репозиторий
+
+```bash
+git clone git@github.com:Toligrim/Telemt-manager.git
+cd Telemt-manager
+```
+
+Если удобнее по HTTPS:
+
+```bash
+git clone https://github.com/Toligrim/Telemt-manager.git
+cd Telemt-manager
+```
+
+### Шаг 4. Сделайте скрипт исполняемым
+
+```bash
+chmod +x telemt-manager.sh
+```
+
+### Шаг 5. Запустите установку
+
+```bash
+./telemt-manager.sh
+```
+
+Если Telemt ещё не установлен, скрипт перейдёт в режим первичной установки.
+
+Если в системе ещё нет Docker, скрипт:
+
+- определит ОС, версию, архитектуру и пакетный менеджер
+- выберет подходящий способ установки Docker
+- подключит официальный Docker-репозиторий для вашей платформы
+- установит Docker Engine и Docker Compose plugin
+- включит и запустит `docker.service`
+- проверит, что `docker`, `docker compose` и Docker daemon действительно работают
+- продолжит установку Telemt автоматически
+
+Во время настройки скрипт запросит:
+
+- домен для TLS-маскировки
+- публичный домен или IP вашего сервера для `tg://proxy` ссылки
+- порт Telemt, обычно `443`
+- локальный API-порт, по умолчанию `9091`
+- включать ли metrics-порт
+- имя пользователя для proxy-ссылки
+
+После этого скрипт:
+
+- сгенерирует новый `32`-hex-char secret
+- создаст каталог `/opt/telemt`
+- запишет конфиг и `docker-compose.yml`
+- создаст `systemd` unit'ы
+- запустит Telemt
+- покажет готовую `tg://proxy` ссылку
+
+### Где хранятся файлы
+
+После установки используются такие пути:
+
+- `/opt/telemt/telemt-config/telemt.toml`
+- `/opt/telemt/docker-compose.yml`
+- `/opt/telemt/install.env`
+- `/opt/telemt/telemt-manager.sh`
+- `/opt/telemt/backups/`
+- `/etc/systemd/system/telemt.service`
+- `/etc/systemd/system/telemt-autoupdate.service`
+- `/etc/systemd/system/telemt-autoupdate.timer`
+
+### Базовое использование
+
+Открыть интерактивное меню:
+
+```bash
+./telemt-manager.sh --menu
+```
+
+Или просто:
+
+```bash
+./telemt-manager.sh
+```
+
+Если установка уже выполнена, откроется меню.
+
+Обновить Telemt:
+
+```bash
+./telemt-manager.sh --update
+```
+
+Полностью заново запросить конфиг:
+
+```bash
+./telemt-manager.sh --reconfigure
+```
+
+Включить автообновление:
+
+```bash
+./telemt-manager.sh --enable-autoupdate
+```
+
+Выключить автообновление:
+
+```bash
+./telemt-manager.sh --disable-autoupdate
+```
+
+Посмотреть статус:
+
+```bash
+./telemt-manager.sh --status
+```
+
+Посмотреть текущий конфиг:
+
+```bash
+./telemt-manager.sh --show-config
+```
+
+Посмотреть логи:
+
+```bash
+./telemt-manager.sh --logs
+```
+
+Сгенерировать новый secret:
+
+```bash
+./telemt-manager.sh --rotate-secret
+```
+
+Сменить только домен маскировки:
+
+```bash
+./telemt-manager.sh --change-mask-domain
+```
+
+Проверить домен маскировки:
+
+```bash
+./telemt-manager.sh --check-mask-domain
+```
+
+Проверить конфликты портов:
+
+```bash
+./telemt-manager.sh --check-ports
+```
+
+Сделать backup вручную:
+
+```bash
+./telemt-manager.sh --backup
+```
+
+Восстановить backup:
+
+```bash
+./telemt-manager.sh --restore-backup
+```
+
+### Как работает автообновление
+
+При включении автообновления скрипт создаёт `systemd timer`, который периодически запускает проверку нового Docker-образа.
+
+Если новый образ найден:
+
+- выполняется `docker compose pull`
+- стек перезапускается
+
+Если обновления нет:
+
+- стек просто остаётся в рабочем состоянии
+
+Проверить состояние timer:
+
+```bash
+systemctl status telemt-autoupdate.timer
+```
+
+### Как удалить Telemt полностью
+
+Через меню:
+
+- выберите пункт `4`
+
+Или через CLI:
+
+```bash
+./telemt-manager.sh --purge
+```
+
+Это действие:
+
+- останавливает контейнеры
+- удаляет `systemd` unit'ы
+- удаляет каталог `/opt/telemt`
+
+### Диагностика проблем
+
+Telemt не запускается:
+
+```bash
+./telemt-manager.sh --status
+./telemt-manager.sh --logs
+```
+
+Порт уже занят:
+
+```bash
+./telemt-manager.sh --check-ports
+```
+
+Домен маскировки не отвечает:
+
+```bash
+./telemt-manager.sh --check-mask-domain
+```
+
+Не работает автообновление:
+
+```bash
+systemctl status telemt-autoupdate.timer
+systemctl status telemt-autoupdate.service
+```
+
+## Рекомендации
+
+### Базовая защита нового VPS
 
 Этот блок не обязателен для запуска скрипта, но очень рекомендуется, если VPS только что создан.
 
-### 1. Обновите систему
+#### 1. Обновите систему
 
 Для Ubuntu или Debian:
 
@@ -76,7 +346,7 @@
 sudo apt update && sudo apt upgrade -y
 ```
 
-### 2. Создайте отдельного пользователя с `sudo`
+#### 2. Создайте отдельного пользователя с `sudo`
 
 Не работайте постоянно под `root`.
 
@@ -91,7 +361,7 @@ usermod -aG sudo telemt
 su - telemt
 ```
 
-### 3. Настройте вход по SSH-ключу
+#### 3. Настройте вход по SSH-ключу
 
 На вашем локальном компьютере:
 
@@ -102,7 +372,7 @@ ssh-copy-id telemt@YOUR_SERVER_IP
 
 Проверьте, что вход по ключу работает, прежде чем отключать пароль.
 
-### 4. Отключите вход по паролю и, по возможности, вход под `root`
+#### 4. Отключите вход по паролю и, по возможности, вход под `root`
 
 Откройте конфиг SSH:
 
@@ -124,7 +394,7 @@ PubkeyAuthentication yes
 sudo systemctl restart ssh
 ```
 
-### 5. Включите файрвол
+#### 5. Включите файрвол
 
 Пример для `ufw`:
 
@@ -138,21 +408,21 @@ sudo ufw status
 
 Если вы используете другой порт для Telemt, откройте его вместо `443`.
 
-### 6. Установите Fail2ban
+#### 6. Установите Fail2ban
 
 ```bash
 sudo apt install -y fail2ban
 sudo systemctl enable --now fail2ban
 ```
 
-### 7. Включите автоматические security-обновления
+#### 7. Включите автоматические security-обновления
 
 ```bash
 sudo apt install -y unattended-upgrades
 sudo dpkg-reconfigure -plow unattended-upgrades
 ```
 
-### 8. Проверьте часовой пояс и время
+#### 8. Проверьте часовой пояс и время
 
 ```bash
 timedatectl
@@ -164,7 +434,7 @@ timedatectl
 sudo timedatectl set-timezone Europe/Moscow
 ```
 
-### 9. Не держите лишние сервисы открытыми наружу
+#### 9. Не держите лишние сервисы открытыми наружу
 
 Минимум проверьте:
 
@@ -172,13 +442,11 @@ sudo timedatectl set-timezone Europe/Moscow
 - `443/tcp` или ваш порт Telemt
 - не открывайте `9091` и `9090` наружу без необходимости
 
-## Установка Docker на Ubuntu/Debian
-
-Если Docker уже установлен, этот раздел можно пропустить.
+### Если хотите установить Docker вручную заранее
 
 По умолчанию `telemt-manager.sh` умеет сам поставить Docker из официального Docker-репозитория, если он не найден. Этот раздел нужен только если вы хотите установить Docker вручную заранее.
 
-### Вариант 1. Быстрая установка из репозиториев ОС
+Для Ubuntu или Debian:
 
 ```bash
 sudo apt update
@@ -193,271 +461,12 @@ docker --version
 docker compose version
 ```
 
-### Вариант 2. Добавить пользователя в группу docker
-
 Чтобы запускать `docker` без `sudo`:
 
 ```bash
 sudo usermod -aG docker "$USER"
 newgrp docker
 ```
-
-## Установка Telemt Manager на VPS
-
-### Шаг 1. Подключитесь к серверу
-
-```bash
-ssh telemt@YOUR_SERVER_IP
-```
-
-Или:
-
-```bash
-ssh root@YOUR_SERVER_IP
-```
-
-### Шаг 2. Клонируйте репозиторий
-
-```bash
-git clone git@github.com:Toligrim/Telemt-manager.git
-cd Telemt-manager
-```
-
-Если удобнее по HTTPS:
-
-```bash
-git clone https://github.com/Toligrim/Telemt-manager.git
-cd Telemt-manager
-```
-
-### Шаг 3. Сделайте скрипт исполняемым
-
-```bash
-chmod +x telemt-manager.sh
-```
-
-### Шаг 4. Запустите установку
-
-```bash
-./telemt-manager.sh
-```
-
-Если Telemt ещё не установлен, скрипт перейдёт в режим первичной установки.
-
-Если в системе ещё нет Docker, скрипт:
-
-- определит ОС, версию, архитектуру и пакетный менеджер
-- выберет подходящий способ установки Docker
-- подключит официальный Docker-репозиторий для вашей платформы
-- установит Docker Engine и Docker Compose plugin
-- включит и запустит `docker.service`
-- проверит, что `docker`, `docker compose` и Docker daemon действительно работают
-- продолжит установку Telemt автоматически
-
-Он запросит:
-
-- домен для TLS-маскировки, например `google.com`
-- публичный домен или IP вашего сервера для `tg://proxy` ссылки
-- порт Telemt, обычно `443`
-- локальный API-порт, по умолчанию `9091`
-- включать ли metrics-порт
-- имя пользователя для proxy-ссылки
-
-После этого скрипт:
-
-- сгенерирует новый `32`-hex-char secret
-- создаст каталог `/opt/telemt`
-- запишет конфиг и `docker-compose.yml`
-- создаст `systemd` unit'ы
-- запустит Telemt
-- покажет готовую `tg://proxy` ссылку
-
-## Где хранятся файлы
-
-После установки используются такие пути:
-
-- `/opt/telemt/telemt-config/telemt.toml`
-- `/opt/telemt/docker-compose.yml`
-- `/opt/telemt/install.env`
-- `/opt/telemt/telemt-manager.sh`
-- `/opt/telemt/backups/`
-- `/etc/systemd/system/telemt.service`
-- `/etc/systemd/system/telemt-autoupdate.service`
-- `/etc/systemd/system/telemt-autoupdate.timer`
-
-## Базовое использование
-
-### Открыть интерактивное меню
-
-```bash
-./telemt-manager.sh --menu
-```
-
-Или просто:
-
-```bash
-./telemt-manager.sh
-```
-
-Если установка уже выполнена, откроется меню.
-
-### Обновить Telemt
-
-```bash
-./telemt-manager.sh --update
-```
-
-### Полностью заново запросить конфиг
-
-```bash
-./telemt-manager.sh --reconfigure
-```
-
-### Включить автообновление
-
-```bash
-./telemt-manager.sh --enable-autoupdate
-```
-
-### Выключить автообновление
-
-```bash
-./telemt-manager.sh --disable-autoupdate
-```
-
-### Посмотреть статус
-
-```bash
-./telemt-manager.sh --status
-```
-
-### Посмотреть текущий конфиг
-
-```bash
-./telemt-manager.sh --show-config
-```
-
-### Посмотреть логи
-
-```bash
-./telemt-manager.sh --logs
-```
-
-### Сгенерировать новый secret
-
-```bash
-./telemt-manager.sh --rotate-secret
-```
-
-### Сменить только домен маскировки
-
-```bash
-./telemt-manager.sh --change-mask-domain
-```
-
-### Проверить домен маскировки
-
-```bash
-./telemt-manager.sh --check-mask-domain
-```
-
-### Проверить конфликты портов
-
-```bash
-./telemt-manager.sh --check-ports
-```
-
-### Сделать backup вручную
-
-```bash
-./telemt-manager.sh --backup
-```
-
-### Восстановить backup
-
-```bash
-./telemt-manager.sh --restore-backup
-```
-
-## Как работает автообновление
-
-При включении автообновления скрипт создаёт `systemd timer`, который периодически запускает проверку нового Docker-образа.
-
-Если новый образ найден:
-
-- выполняется `docker compose pull`
-- стек перезапускается
-
-Если обновления нет:
-
-- стек просто остаётся в рабочем состоянии
-
-Проверить состояние timer:
-
-```bash
-systemctl status telemt-autoupdate.timer
-```
-
-## Как удалить Telemt полностью
-
-Через меню:
-
-- выберите пункт `4`
-
-Или через CLI:
-
-```bash
-./telemt-manager.sh --purge
-```
-
-Это действие:
-
-- останавливает контейнеры
-- удаляет `systemd` unit'ы
-- удаляет каталог `/opt/telemt`
-
-## Диагностика проблем
-
-### Telemt не запускается
-
-Проверьте:
-
-```bash
-./telemt-manager.sh --status
-./telemt-manager.sh --logs
-```
-
-### Порт уже занят
-
-Проверьте:
-
-```bash
-./telemt-manager.sh --check-ports
-```
-
-### Домен маскировки не отвечает
-
-Проверьте:
-
-```bash
-./telemt-manager.sh --check-mask-domain
-```
-
-### Не работает автообновление
-
-Проверьте:
-
-```bash
-systemctl status telemt-autoupdate.timer
-systemctl status telemt-autoupdate.service
-```
-
-## Важные замечания
-
-- Проект не заменяет upstream `telemt-docker`, а является управляющей обвязкой поверх него.
-- Перед изменением конфига скрипт делает backup.
-- API и metrics порты не стоит публиковать наружу без явной необходимости.
-- Если вы используете порт ниже `1024`, контейнер будет запускаться с возможностью bind на privileged port.
 
 ## Благодарности
 
