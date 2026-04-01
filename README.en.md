@@ -6,6 +6,8 @@
 
 This project is built on top of [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker) and uses the `whn0thacked/telemt-docker:latest` Docker image as its deployment base.
 
+`Telemt Manager` is for cases where you do not want to assemble Telemt on a VPS by hand and instead want one clear workflow to install, configure, update, inspect, and maintain the instance through a single interactive script.
+
 ## Description
 
 It helps you:
@@ -39,6 +41,20 @@ After installation, the interactive menu provides:
 17. Restore a config backup
 
 All key actions are also available through CLI flags.
+
+## Quick Start
+
+Minimal install flow for a fresh VPS:
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/Toligrim/Telemt-manager.git
+cd Telemt-manager
+chmod +x telemt-manager.sh
+./telemt-manager.sh
+```
+
+If Docker is not installed yet, the script will try to install it automatically on a supported OS and then continue the Telemt setup.
 
 ## Install and Use Telemt
 
@@ -189,83 +205,24 @@ Or simply:
 
 If Telemt is already installed, the menu will open.
 
-Update Telemt:
+Key commands:
 
-```bash
-./telemt-manager.sh --update
-```
-
-Re-run the full configuration flow:
-
-```bash
-./telemt-manager.sh --reconfigure
-```
-
-Enable auto-update:
-
-```bash
-./telemt-manager.sh --enable-autoupdate
-```
-
-Disable auto-update:
-
-```bash
-./telemt-manager.sh --disable-autoupdate
-```
-
-Show status:
-
-```bash
-./telemt-manager.sh --status
-```
-
-Show current config:
-
-```bash
-./telemt-manager.sh --show-config
-```
-
-Show logs:
-
-```bash
-./telemt-manager.sh --logs
-```
-
-Generate a new secret:
-
-```bash
-./telemt-manager.sh --rotate-secret
-```
-
-Change only the camouflage domain:
-
-```bash
-./telemt-manager.sh --change-mask-domain
-```
-
-Check the camouflage domain:
-
-```bash
-./telemt-manager.sh --check-mask-domain
-```
-
-Check port conflicts:
-
-```bash
-./telemt-manager.sh --check-ports
-```
-
-Create a manual backup:
-
-```bash
-./telemt-manager.sh --backup
-```
-
-Restore a backup:
-
-```bash
-./telemt-manager.sh --restore-backup
-```
+| Action | Command |
+| --- | --- |
+| Open menu | `./telemt-manager.sh --menu` |
+| Update Telemt | `./telemt-manager.sh --update` |
+| Re-run full config | `./telemt-manager.sh --reconfigure` |
+| Enable auto-update | `./telemt-manager.sh --enable-autoupdate` |
+| Disable auto-update | `./telemt-manager.sh --disable-autoupdate` |
+| Show status | `./telemt-manager.sh --status` |
+| Show current config | `./telemt-manager.sh --show-config` |
+| Show logs | `./telemt-manager.sh --logs` |
+| Generate a new secret | `./telemt-manager.sh --rotate-secret` |
+| Change only the camouflage domain | `./telemt-manager.sh --change-mask-domain` |
+| Check the camouflage domain | `./telemt-manager.sh --check-mask-domain` |
+| Check port conflicts | `./telemt-manager.sh --check-ports` |
+| Create a backup | `./telemt-manager.sh --backup` |
+| Restore a backup | `./telemt-manager.sh --restore-backup` |
 
 ### How auto-update works
 

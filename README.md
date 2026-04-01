@@ -6,6 +6,8 @@
 
 Проект построен поверх [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker) и использует Docker-образ `whn0thacked/telemt-docker:latest` как основу для развертывания.
 
+`Telemt Manager` нужен, когда хочется не собирать Telemt на VPS вручную, а получить один понятный сценарий: установить, настроить, обновлять, проверять состояние и обслуживать инстанс через единый интерактивный скрипт.
+
 ## Описание
 
 Скрипт помогает:
@@ -39,6 +41,20 @@
 17. Восстановить backup конфига
 
 Также все основные действия доступны через CLI-флаги.
+
+## Quick Start
+
+Минимальный сценарий установки на чистом VPS:
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/Toligrim/Telemt-manager.git
+cd Telemt-manager
+chmod +x telemt-manager.sh
+./telemt-manager.sh
+```
+
+Если Docker ещё не установлен, скрипт сам попытается поставить его на поддерживаемой ОС и затем продолжит установку Telemt.
 
 ## Установка и использование Telemt
 
@@ -189,83 +205,24 @@ chmod +x telemt-manager.sh
 
 Если установка уже выполнена, откроется меню.
 
-Обновить Telemt:
+Ключевые команды:
 
-```bash
-./telemt-manager.sh --update
-```
-
-Полностью заново запросить конфиг:
-
-```bash
-./telemt-manager.sh --reconfigure
-```
-
-Включить автообновление:
-
-```bash
-./telemt-manager.sh --enable-autoupdate
-```
-
-Выключить автообновление:
-
-```bash
-./telemt-manager.sh --disable-autoupdate
-```
-
-Посмотреть статус:
-
-```bash
-./telemt-manager.sh --status
-```
-
-Посмотреть текущий конфиг:
-
-```bash
-./telemt-manager.sh --show-config
-```
-
-Посмотреть логи:
-
-```bash
-./telemt-manager.sh --logs
-```
-
-Сгенерировать новый secret:
-
-```bash
-./telemt-manager.sh --rotate-secret
-```
-
-Сменить только домен маскировки:
-
-```bash
-./telemt-manager.sh --change-mask-domain
-```
-
-Проверить домен маскировки:
-
-```bash
-./telemt-manager.sh --check-mask-domain
-```
-
-Проверить конфликты портов:
-
-```bash
-./telemt-manager.sh --check-ports
-```
-
-Сделать backup вручную:
-
-```bash
-./telemt-manager.sh --backup
-```
-
-Восстановить backup:
-
-```bash
-./telemt-manager.sh --restore-backup
-```
+| Действие | Команда |
+| --- | --- |
+| Открыть меню | `./telemt-manager.sh --menu` |
+| Обновить Telemt | `./telemt-manager.sh --update` |
+| Полностью обновить конфиг | `./telemt-manager.sh --reconfigure` |
+| Включить автообновление | `./telemt-manager.sh --enable-autoupdate` |
+| Выключить автообновление | `./telemt-manager.sh --disable-autoupdate` |
+| Посмотреть статус | `./telemt-manager.sh --status` |
+| Посмотреть текущий конфиг | `./telemt-manager.sh --show-config` |
+| Посмотреть логи | `./telemt-manager.sh --logs` |
+| Сгенерировать новый secret | `./telemt-manager.sh --rotate-secret` |
+| Сменить только домен маскировки | `./telemt-manager.sh --change-mask-domain` |
+| Проверить домен маскировки | `./telemt-manager.sh --check-mask-domain` |
+| Проверить конфликты портов | `./telemt-manager.sh --check-ports` |
+| Сделать backup | `./telemt-manager.sh --backup` |
+| Восстановить backup | `./telemt-manager.sh --restore-backup` |
 
 ### Как работает автообновление
 

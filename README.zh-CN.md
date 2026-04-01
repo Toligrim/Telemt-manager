@@ -6,6 +6,8 @@
 
 本项目基于 [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker) 构建，并使用 `whn0thacked/telemt-docker:latest` Docker 镜像作为部署基础。
 
+`Telemt Manager` 适合不想在 VPS 上手动拼装 Telemt 环境的人。它把安装、配置、更新、检查状态和日常维护整合进一个交互式脚本里。
+
 ## 说明
 
 它可以帮助你：
@@ -39,6 +41,20 @@
 17. 恢复配置备份
 
 所有主要操作也都支持通过 CLI 参数执行。
+
+## Quick Start
+
+在全新 VPS 上的最小安装流程：
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/Toligrim/Telemt-manager.git
+cd Telemt-manager
+chmod +x telemt-manager.sh
+./telemt-manager.sh
+```
+
+如果系统中还没有安装 Docker，脚本会在受支持的系统上自动尝试安装它，然后继续完成 Telemt 安装。
 
 ## 安装和使用 Telemt
 
@@ -189,83 +205,24 @@ chmod +x telemt-manager.sh
 
 如果 Telemt 已安装，脚本将直接打开菜单。
 
-更新 Telemt：
+常用命令：
 
-```bash
-./telemt-manager.sh --update
-```
-
-重新执行完整配置流程：
-
-```bash
-./telemt-manager.sh --reconfigure
-```
-
-启用自动更新：
-
-```bash
-./telemt-manager.sh --enable-autoupdate
-```
-
-禁用自动更新：
-
-```bash
-./telemt-manager.sh --disable-autoupdate
-```
-
-查看状态：
-
-```bash
-./telemt-manager.sh --status
-```
-
-查看当前配置：
-
-```bash
-./telemt-manager.sh --show-config
-```
-
-查看日志：
-
-```bash
-./telemt-manager.sh --logs
-```
-
-生成新的 secret：
-
-```bash
-./telemt-manager.sh --rotate-secret
-```
-
-仅修改伪装域名：
-
-```bash
-./telemt-manager.sh --change-mask-domain
-```
-
-检查伪装域名：
-
-```bash
-./telemt-manager.sh --check-mask-domain
-```
-
-检查端口冲突：
-
-```bash
-./telemt-manager.sh --check-ports
-```
-
-手动创建备份：
-
-```bash
-./telemt-manager.sh --backup
-```
-
-恢复备份：
-
-```bash
-./telemt-manager.sh --restore-backup
-```
+| 操作 | 命令 |
+| --- | --- |
+| 打开菜单 | `./telemt-manager.sh --menu` |
+| 更新 Telemt | `./telemt-manager.sh --update` |
+| 重新执行完整配置 | `./telemt-manager.sh --reconfigure` |
+| 启用自动更新 | `./telemt-manager.sh --enable-autoupdate` |
+| 禁用自动更新 | `./telemt-manager.sh --disable-autoupdate` |
+| 查看状态 | `./telemt-manager.sh --status` |
+| 查看当前配置 | `./telemt-manager.sh --show-config` |
+| 查看日志 | `./telemt-manager.sh --logs` |
+| 生成新的 secret | `./telemt-manager.sh --rotate-secret` |
+| 仅修改伪装域名 | `./telemt-manager.sh --change-mask-domain` |
+| 检查伪装域名 | `./telemt-manager.sh --check-mask-domain` |
+| 检查端口冲突 | `./telemt-manager.sh --check-ports` |
+| 创建备份 | `./telemt-manager.sh --backup` |
+| 恢复备份 | `./telemt-manager.sh --restore-backup` |
 
 ### 自动更新的工作方式
 
