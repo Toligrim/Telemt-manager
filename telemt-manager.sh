@@ -22,6 +22,14 @@ DEFAULT_AUTOUPDATE_SCHEDULE="hourly"
 
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 SCRIPT_PATH="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)/$(basename "${SCRIPT_PATH}")"
+DETECTED_OS_ID=""
+DETECTED_OS_LIKE=""
+DETECTED_OS_VERSION_ID=""
+DETECTED_OS_CODENAME=""
+DETECTED_OS_PRETTY_NAME=""
+DETECTED_ARCH=""
+DETECTED_PKG_MANAGER=""
+DETECTED_DOCKER_REPO_URL=""
 
 info() {
   printf '[INFO] %s\n' "$*"
@@ -85,6 +93,150 @@ get_os_like() {
   printf '%s\n' "${ID_LIKE:-}"
 }
 
+get_os_version_id() {
+  [ -r /etc/os-release ] || return 1
+  . /etc/os-release
+  printf '%s\n' "${VERSION_ID:-}"
+}
+
+get_os_codename() {
+  [ -r /etc/os-release ] || return 1
+  . /etc/os-release
+  if [ -n "${UBUNTU_CODENAME:-}" ]; then
+    printf '%s\n' "${UBUNTU_CODENAME}"
+  else
+    printf '%s\n' "${VERSION_CODENAME:-}"
+  fi
+}
+
+get_os_pretty_name() {
+  [ -r /etc/os-release ] || return 1
+  . /etc/os-release
+  printf '%s\n' "${PRETTY_NAME:-unknown}"
+}
+
+get_architecture() {
+  uname -m
+}
+
+detect_platform() {
+  DETECTED_OS_ID="$(get_os_id || true)"
+  DETECTED_OS_LIKE="$(get_os_like || true)"
+  DETECTED_OS_VERSION_ID="$(get_os_version_id || true)"
+  DETECTED_OS_CODENAME="$(get_os_codename || true)"
+  DETECTED_OS_PRETTY_NAME="$(get_os_pretty_name || true)"
+  DETECTED_ARCH="$(get_architecture || true)"
+  DETECTED_PKG_MANAGER=""
+  DETECTED_DOCKER_REPO_URL=""
+
+  [ -n "${DETECTED_OS_ID}" ] || die "Не удалось определить ОС через /etc/os-release"
+
+  case "${DETECTED_OS_ID}" in
+    ubuntu)
+      DETECTED_PKG_MANAGER="apt"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/ubuntu"
+      ;;
+    debian)
+      DETECTED_PKG_MANAGER="apt"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/debian"
+      ;;
+    fedora)
+      DETECTED_PKG_MANAGER="dnf"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/fedora/docker-ce.repo"
+      ;;
+    centos)
+      DETECTED_PKG_MANAGER="dnf"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/centos/docker-ce.repo"
+      ;;
+    rhel)
+      DETECTED_PKG_MANAGER="dnf"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/rhel/docker-ce.repo"
+      ;;
+    rocky|almalinux)
+      DETECTED_PKG_MANAGER="dnf"
+      DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/centos/docker-ce.repo"
+      ;;
+    *)
+      case " ${DETECTED_OS_LIKE} " in
+        *" debian "*)
+          DETECTED_PKG_MANAGER="apt"
+          DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/debian"
+          ;;
+        *" rhel "*|*" fedora "*|*" centos "*)
+          DETECTED_PKG_MANAGER="dnf"
+          DETECTED_DOCKER_REPO_URL="https://download.docker.com/linux/rhel/docker-ce.repo"
+          ;;
+      esac
+      ;;
+  esac
+}
+
+require_supported_platform() {
+  detect_platform
+
+  case "${DETECTED_PKG_MANAGER}" in
+    apt)
+      [ -n "${DETECTED_OS_CODENAME}" ] || die "Не удалось определить codename дистрибутива для apt-репозитория Docker"
+      ;;
+    dnf)
+      need_cmd dnf
+      ;;
+    *)
+      die "Неподдерживаемая ОС: ${DETECTED_OS_PRETTY_NAME}. Сейчас автоустановка Docker поддерживает Ubuntu, Debian, Fedora, RHEL, CentOS Stream, Rocky Linux и AlmaLinux."
+      ;;
+  esac
+
+  case "${DETECTED_ARCH}" in
+    x86_64|aarch64|armv7l|armv6l|ppc64le|s390x)
+      ;;
+    *)
+      die "Неподдерживаемая архитектура: ${DETECTED_ARCH}"
+      ;;
+  esac
+
+  info "Обнаружена платформа: ${DETECTED_OS_PRETTY_NAME} (${DETECTED_ARCH}), пакетный менеджер: ${DETECTED_PKG_MANAGER}"
+}
+
+verify_docker_runtime() {
+  have_cmd docker || die "После установки команда docker не найдена"
+  resolve_compose_bin || die "После установки не найден docker compose plugin"
+  systemctl is-active docker >/dev/null 2>&1 || die "Сервис docker не запущен после установки"
+  docker info >/dev/null 2>&1 || die "Docker установлен, но daemon не отвечает на docker info"
+}
+
+install_docker_apt_family() {
+  need_cmd install
+  run_as_root apt-get update
+  run_as_root apt-get install -y ca-certificates curl
+  run_as_root install -m 0755 -d /etc/apt/keyrings
+  run_as_root curl -fsSL "${DETECTED_DOCKER_REPO_URL}/gpg" -o /etc/apt/keyrings/docker.asc
+  run_as_root chmod a+r /etc/apt/keyrings/docker.asc
+  cat <<EOF | write_root_file /etc/apt/sources.list.d/docker.sources
+Types: deb
+URIs: ${DETECTED_DOCKER_REPO_URL}
+Suites: ${DETECTED_OS_CODENAME}
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+  run_as_root apt-get update
+  run_as_root apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+install_docker_dnf_family() {
+  run_as_root dnf -y install dnf-plugins-core
+
+  case "${DETECTED_OS_ID}" in
+    fedora)
+      run_as_root dnf config-manager addrepo --from-repofile "${DETECTED_DOCKER_REPO_URL}"
+      ;;
+    *)
+      run_as_root dnf config-manager --add-repo "${DETECTED_DOCKER_REPO_URL}"
+      ;;
+  esac
+
+  run_as_root dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
 resolve_compose_bin() {
   if have_cmd docker && docker compose version >/dev/null 2>&1; then
     COMPOSE_BIN=(docker compose)
@@ -100,26 +252,23 @@ resolve_compose_bin() {
 }
 
 install_docker_stack() {
-  local os_id=""
-  local os_like=""
+  require_supported_platform
+  info "Docker или Docker Compose не найдены. Запускаю установку из официального Docker-репозитория."
 
-  os_id="$(get_os_id || true)"
-  os_like="$(get_os_like || true)"
-
-  case "${os_id} ${os_like}" in
-    ubuntu*|debian*|*debian*|*ubuntu*)
-      info "Docker или Docker Compose не найдены. Устанавливаю их автоматически."
-      run_as_root apt-get update
-      run_as_root apt-get install -y docker.io docker-compose-plugin
-      run_as_root systemctl enable --now docker
+  case "${DETECTED_PKG_MANAGER}" in
+    apt)
+      install_docker_apt_family
+      ;;
+    dnf)
+      install_docker_dnf_family
       ;;
     *)
-      die "Автоустановка Docker поддерживается только на Ubuntu/Debian. Установи Docker и Docker Compose вручную."
+      die "Не удалось выбрать стратегию установки Docker для ${DETECTED_OS_PRETTY_NAME}"
       ;;
   esac
 
-  have_cmd docker || die "Установка Docker завершилась без команды docker"
-  resolve_compose_bin || die "Установка Docker Compose завершилась без compose plugin"
+  run_as_root systemctl enable --now docker
+  verify_docker_runtime
 }
 
 ensure_base_dependencies() {

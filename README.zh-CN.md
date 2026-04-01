@@ -53,7 +53,16 @@
 - Ubuntu 22.04+
 - Debian 12+
 
-如果系统中缺少 `docker` 和 `docker compose`，`telemt-manager.sh` 会在 Ubuntu/Debian 上自动尝试安装它们，然后继续完成 Telemt 安装。
+如果系统中缺少 `docker` 和 `docker compose`，`telemt-manager.sh` 会在受支持的系统上自动尝试安装它们，然后继续完成 Telemt 安装。
+
+支持的 Docker 自动安装平台：
+
+- Ubuntu，使用官方 Docker `apt` 仓库
+- Debian，使用官方 Docker `apt` 仓库
+- Fedora，使用官方 Docker `dnf` 仓库
+- RHEL、CentOS Stream、Rocky Linux 和 AlmaLinux，使用官方 Docker `dnf` 仓库
+
+如果系统不受支持，脚本会直接给出明确错误，而不是盲目猜测安装命令。
 
 ## 新 VPS 的基础安全建议
 
@@ -167,7 +176,7 @@ sudo timedatectl set-timezone Europe/Moscow
 
 如果 Docker 已安装，可以跳过本节。
 
-默认情况下，当脚本检测不到 Docker 时，`telemt-manager.sh` 会在 Ubuntu/Debian 上自动安装它。本节仅适用于你希望提前手动安装 Docker 的情况。
+默认情况下，当脚本检测不到 Docker 时，`telemt-manager.sh` 会从官方 Docker 仓库自动安装它。本节仅适用于你希望提前手动安装 Docker 的情况。
 
 ### 方案 1：通过系统仓库快速安装
 
@@ -237,9 +246,12 @@ chmod +x telemt-manager.sh
 
 如果系统中尚未安装 Docker，脚本会：
 
-- 检测到缺少 `docker` 和 `docker compose`
-- 在 Ubuntu/Debian 上安装 `docker.io` 和 `docker-compose-plugin`
+- 检测系统的 OS、版本、架构和包管理器
+- 选择正确的 Docker 安装策略
+- 为当前平台配置官方 Docker 仓库
+- 安装 Docker Engine 和 Docker Compose plugin
 - 启用并启动 `docker.service`
+- 验证 `docker`、`docker compose` 和 Docker daemon 是否真正可用
 - 然后继续 Telemt 的安装流程
 
 脚本会询问你：

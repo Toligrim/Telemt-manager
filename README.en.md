@@ -53,7 +53,16 @@ Recommended OS:
 - Ubuntu 22.04+
 - Debian 12+
 
-If `docker` and `docker compose` are missing, `telemt-manager.sh` will try to install them automatically on Ubuntu/Debian and then continue the Telemt setup.
+If `docker` and `docker compose` are missing, `telemt-manager.sh` will try to install them automatically on a supported OS and then continue the Telemt setup.
+
+Supported Docker auto-install targets:
+
+- Ubuntu via the official Docker `apt` repository
+- Debian via the official Docker `apt` repository
+- Fedora via the official Docker `dnf` repository
+- RHEL, CentOS Stream, Rocky Linux, and AlmaLinux via the official Docker `dnf` repository
+
+If the OS is not supported, the script exits with a clear error instead of guessing installation commands.
 
 ## Recommended Basic VPS Hardening
 
@@ -167,7 +176,7 @@ At minimum, verify:
 
 Skip this section if Docker is already installed.
 
-By default, `telemt-manager.sh` can install Docker automatically on Ubuntu/Debian when it is not found. This section is only needed if you prefer to install Docker manually in advance.
+By default, `telemt-manager.sh` can install Docker from the official Docker repositories when it is not found. This section is only needed if you prefer to install Docker manually in advance.
 
 ### Option 1. Quick install from OS repositories
 
@@ -237,9 +246,12 @@ If Telemt is not installed yet, the script will start the first-time installatio
 
 If Docker is not installed yet, the script will:
 
-- detect that `docker` and `docker compose` are missing
-- install `docker.io` and `docker-compose-plugin` on Ubuntu/Debian
+- detect the OS, version, architecture, and package manager
+- choose the correct Docker installation strategy
+- configure the official Docker repository for your platform
+- install Docker Engine and the Docker Compose plugin
 - enable and start `docker.service`
+- verify that `docker`, `docker compose`, and the Docker daemon actually work
 - continue the Telemt installation automatically
 
 It will ask for:

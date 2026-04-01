@@ -53,7 +53,16 @@
 - Ubuntu 22.04+
 - Debian 12+
 
-Если `docker` и `docker compose` отсутствуют, `telemt-manager.sh` попытается установить их автоматически на Ubuntu/Debian и затем продолжит установку.
+Если `docker` и `docker compose` отсутствуют, `telemt-manager.sh` попытается установить их автоматически на поддерживаемой ОС и затем продолжит установку.
+
+Поддерживаемые сценарии автоустановки Docker:
+
+- Ubuntu через официальный Docker `apt` repository
+- Debian через официальный Docker `apt` repository
+- Fedora через официальный Docker `dnf` repository
+- RHEL, CentOS Stream, Rocky Linux и AlmaLinux через официальный Docker `dnf` repository
+
+Если ОС не поддерживается, скрипт завершится с понятной ошибкой и не будет пытаться угадывать команды установки.
 
 ## Рекомендации по базовой защите нового VPS
 
@@ -167,7 +176,7 @@ sudo timedatectl set-timezone Europe/Moscow
 
 Если Docker уже установлен, этот раздел можно пропустить.
 
-По умолчанию `telemt-manager.sh` умеет сам поставить Docker на Ubuntu/Debian, если он не найден. Этот раздел нужен только если вы хотите установить Docker вручную заранее.
+По умолчанию `telemt-manager.sh` умеет сам поставить Docker из официального Docker-репозитория, если он не найден. Этот раздел нужен только если вы хотите установить Docker вручную заранее.
 
 ### Вариант 1. Быстрая установка из репозиториев ОС
 
@@ -237,9 +246,12 @@ chmod +x telemt-manager.sh
 
 Если в системе ещё нет Docker, скрипт:
 
-- определит, что `docker` и `docker compose` отсутствуют
-- установит `docker.io` и `docker-compose-plugin` на Ubuntu/Debian
+- определит ОС, версию, архитектуру и пакетный менеджер
+- выберет подходящий способ установки Docker
+- подключит официальный Docker-репозиторий для вашей платформы
+- установит Docker Engine и Docker Compose plugin
 - включит и запустит `docker.service`
+- проверит, что `docker`, `docker compose` и Docker daemon действительно работают
 - продолжит установку Telemt автоматически
 
 Он запросит:
