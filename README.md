@@ -45,7 +45,6 @@
 Сценарий рассчитан на Linux VPS с:
 
 - `systemd`
-- `docker` и `docker compose` или `docker-compose`
 - доступом `root` или пользователем с `sudo`
 - открытым входящим портом для Telemt, обычно `443`
 
@@ -53,6 +52,8 @@
 
 - Ubuntu 22.04+
 - Debian 12+
+
+Если `docker` и `docker compose` отсутствуют, `telemt-manager.sh` попытается установить их автоматически на Ubuntu/Debian и затем продолжит установку.
 
 ## Рекомендации по базовой защите нового VPS
 
@@ -166,6 +167,8 @@ sudo timedatectl set-timezone Europe/Moscow
 
 Если Docker уже установлен, этот раздел можно пропустить.
 
+По умолчанию `telemt-manager.sh` умеет сам поставить Docker на Ubuntu/Debian, если он не найден. Этот раздел нужен только если вы хотите установить Docker вручную заранее.
+
 ### Вариант 1. Быстрая установка из репозиториев ОС
 
 ```bash
@@ -231,6 +234,13 @@ chmod +x telemt-manager.sh
 ```
 
 Если Telemt ещё не установлен, скрипт перейдёт в режим первичной установки.
+
+Если в системе ещё нет Docker, скрипт:
+
+- определит, что `docker` и `docker compose` отсутствуют
+- установит `docker.io` и `docker-compose-plugin` на Ubuntu/Debian
+- включит и запустит `docker.service`
+- продолжит установку Telemt автоматически
 
 Он запросит:
 
@@ -441,4 +451,3 @@ systemctl status telemt-autoupdate.service
 
 - Основа развертывания: [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker)
 - Основной проект Telemt: [telemt/telemt](https://github.com/telemt/telemt)
-

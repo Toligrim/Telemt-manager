@@ -45,7 +45,6 @@ All key actions are also available through CLI flags.
 The script is intended for a Linux VPS with:
 
 - `systemd`
-- `docker` and `docker compose`, or `docker-compose`
 - `root` access or a user with `sudo`
 - an inbound port for Telemt, typically `443`
 
@@ -53,6 +52,8 @@ Recommended OS:
 
 - Ubuntu 22.04+
 - Debian 12+
+
+If `docker` and `docker compose` are missing, `telemt-manager.sh` will try to install them automatically on Ubuntu/Debian and then continue the Telemt setup.
 
 ## Recommended Basic VPS Hardening
 
@@ -166,6 +167,8 @@ At minimum, verify:
 
 Skip this section if Docker is already installed.
 
+By default, `telemt-manager.sh` can install Docker automatically on Ubuntu/Debian when it is not found. This section is only needed if you prefer to install Docker manually in advance.
+
 ### Option 1. Quick install from OS repositories
 
 ```bash
@@ -231,6 +234,13 @@ chmod +x telemt-manager.sh
 ```
 
 If Telemt is not installed yet, the script will start the first-time installation flow.
+
+If Docker is not installed yet, the script will:
+
+- detect that `docker` and `docker compose` are missing
+- install `docker.io` and `docker-compose-plugin` on Ubuntu/Debian
+- enable and start `docker.service`
+- continue the Telemt installation automatically
 
 It will ask for:
 
@@ -441,4 +451,3 @@ systemctl status telemt-autoupdate.service
 
 - Deployment base: [An0nX/telemt-docker](https://github.com/An0nX/telemt-docker)
 - Core Telemt project: [telemt/telemt](https://github.com/telemt/telemt)
-

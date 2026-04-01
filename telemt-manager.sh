@@ -73,6 +73,55 @@ write_root_file() {
   fi
 }
 
+get_os_id() {
+  [ -r /etc/os-release ] || return 1
+  . /etc/os-release
+  printf '%s\n' "${ID:-}"
+}
+
+get_os_like() {
+  [ -r /etc/os-release ] || return 1
+  . /etc/os-release
+  printf '%s\n' "${ID_LIKE:-}"
+}
+
+resolve_compose_bin() {
+  if have_cmd docker && docker compose version >/dev/null 2>&1; then
+    COMPOSE_BIN=(docker compose)
+    return 0
+  fi
+
+  if have_cmd docker-compose; then
+    COMPOSE_BIN=(docker-compose)
+    return 0
+  fi
+
+  return 1
+}
+
+install_docker_stack() {
+  local os_id=""
+  local os_like=""
+
+  os_id="$(get_os_id || true)"
+  os_like="$(get_os_like || true)"
+
+  case "${os_id} ${os_like}" in
+    ubuntu*|debian*|*debian*|*ubuntu*)
+      info "Docker или Docker Compose не найдены. Устанавливаю их автоматически."
+      run_as_root apt-get update
+      run_as_root apt-get install -y docker.io docker-compose-plugin
+      run_as_root systemctl enable --now docker
+      ;;
+    *)
+      die "Автоустановка Docker поддерживается только на Ubuntu/Debian. Установи Docker и Docker Compose вручную."
+      ;;
+  esac
+
+  have_cmd docker || die "Установка Docker завершилась без команды docker"
+  resolve_compose_bin || die "Установка Docker Compose завершилась без compose plugin"
+}
+
 ensure_base_dependencies() {
   need_cmd bash
   need_cmd awk
@@ -84,16 +133,12 @@ ensure_base_dependencies() {
   need_cmd cp
   need_cmd date
   need_cmd systemctl
-  need_cmd docker
   if ! is_root; then
     need_cmd sudo
   fi
-  if docker compose version >/dev/null 2>&1; then
-    COMPOSE_BIN=(docker compose)
-  elif have_cmd docker-compose; then
-    COMPOSE_BIN=(docker-compose)
-  else
-    die "Не найден ни 'docker compose', ни 'docker-compose'"
+
+  if ! have_cmd docker || ! resolve_compose_bin; then
+    install_docker_stack
   fi
 }
 

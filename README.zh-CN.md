@@ -45,7 +45,6 @@
 脚本适用于满足以下条件的 Linux VPS：
 
 - 使用 `systemd`
-- 已安装 `docker` 和 `docker compose`，或 `docker-compose`
 - 拥有 `root` 权限，或使用带 `sudo` 权限的用户
 - 为 Telemt 开放一个入站端口，通常为 `443`
 
@@ -53,6 +52,8 @@
 
 - Ubuntu 22.04+
 - Debian 12+
+
+如果系统中缺少 `docker` 和 `docker compose`，`telemt-manager.sh` 会在 Ubuntu/Debian 上自动尝试安装它们，然后继续完成 Telemt 安装。
 
 ## 新 VPS 的基础安全建议
 
@@ -166,6 +167,8 @@ sudo timedatectl set-timezone Europe/Moscow
 
 如果 Docker 已安装，可以跳过本节。
 
+默认情况下，当脚本检测不到 Docker 时，`telemt-manager.sh` 会在 Ubuntu/Debian 上自动安装它。本节仅适用于你希望提前手动安装 Docker 的情况。
+
 ### 方案 1：通过系统仓库快速安装
 
 ```bash
@@ -231,6 +234,13 @@ chmod +x telemt-manager.sh
 ```
 
 如果系统中尚未安装 Telemt，脚本会进入首次安装流程。
+
+如果系统中尚未安装 Docker，脚本会：
+
+- 检测到缺少 `docker` 和 `docker compose`
+- 在 Ubuntu/Debian 上安装 `docker.io` 和 `docker-compose-plugin`
+- 启用并启动 `docker.service`
+- 然后继续 Telemt 的安装流程
 
 脚本会询问你：
 
